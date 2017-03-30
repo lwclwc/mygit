@@ -1,7 +1,7 @@
 /*************************************************************************
 > File Name: analyze.cpp
 > Author: luoweichui
-> Mail: 1043531734@qq.com
+> Mail: 1043531734@qq.comgetmyarr
 > Created Time: 2017年03月29日 星期三 15时28分31秒
 ************************************************************************/
 
@@ -14,32 +14,32 @@
 #include <string>
 #include <iostream>
 #include <string.h>
+#include <map>
+#include <vector>
 
 using namespace std;
 const int MAXLEN = 1024;
-const int MAXSIZE = 3000;
+const int MAXSIZE = 10000;
 
 class MyArr
 {
 private:
 	char *tmp[8];
 	int   truesize;
-	char  *arr[MAXSIZE][3];
-
+	map<int, map<int,string> >arr;
 	bool MySplit(char *Strline);
-	bool GetTime(char *stime, char **dtime);
-	bool GetCliIp(char *sourceip,char **desip);
-	bool GetTypeTimeCliStr(char **type, char **time, char **clientip);
+	bool GetTime(char *stime, char *&dtime);
+	bool GetCliIp(char *sourceip, char *&desip);
+	bool GetTypeTimeCliStr(char *&type, char *&time, char *&clientip);
 	bool ClearTmp();
-	bool GetPlace(char **p);
 	bool Merge(int gap);
-	int  MyStrSub(char *a, char *b);
-	bool GetMyString(char *Strline, char **type, char **time, char **clientip);
+	int  MyStrSub(const char *a,const char *b);
+	bool GetMyString(char *Strline, char * &type, char * &time, char * &clientip);
 
 public:
 	int    count_dif_ip;
-	double intertimearr[MAXSIZE];
-	double oneinter[MAXSIZE];
+	vector<double>intertimearr;
+	vector<double>oneinter;
 	int    totalipj;
 	int    internumz;
 	int    max;
@@ -52,7 +52,6 @@ public:
 	int  GetCountDifIp();
 	bool GetMytime();
 	bool GetOneTime();
-	bool FreeMyArr();
 	MyArr()
 	{
 		count_dif_ip = 0;
@@ -62,9 +61,8 @@ public:
 		one_to_end = 0;
 		count = 0;
 		truesize = 0;
-	    intertimearr[MAXSIZE] = {0};
-	    oneinter[MAXSIZE] = {0};
-	    arr[MAXSIZE][3] = {NULL};
+		intertimearr.reserve(MAXSIZE);
+		oneinter.reserve(MAXSIZE);
 	}
 };
 
@@ -77,13 +75,10 @@ bool MyArr::MySplit(char *Strline)
 		cout << "MySplit error" << endl;
 		return false;
 	}
-	char *p = Strline;
-	while (*Strline != '\n')
-	{
-		Strline++;
-	}
-	*Strline = '\0';
-	Strline = p;
+
+	string str = Strline;
+	int pos = str.find("\n", 0);
+	Strline[pos] = '\0';
 
 	char *ptr = strtok(Strline, " ");
 	while (ptr != NULL)
@@ -94,53 +89,44 @@ bool MyArr::MySplit(char *Strline)
 	return true;
 }
 
-bool MyArr::GetTime(char *stime, char **dtime)
+bool MyArr::GetTime(char *stime, char *&dtime)
 {
-	if (stime == NULL || dtime == NULL)
+	if (stime == NULL)
 	{
 		cout << "GetTime error" << endl;
 		return false;
 	}
-	while (*stime != '=')
-	{
-		stime++;
-	}
-	*dtime = stime + 1;
+	string str = stime;
+	int pos = str.find("=", 0);
+	dtime = stime+pos+1;
 	return true;
 }
 
 
-bool MyArr::GetCliIp(char *sourceip, char **desip)
+bool MyArr::GetCliIp(char *sourceip, char *&desip)
 {
-	if (sourceip == NULL || desip == NULL)
+	if (sourceip == NULL)
 	{
 		cout << "GetCliIp error" << endl;
 		return false;
 	}
-	while (*sourceip != '=')
-	{
-		sourceip++;
-	}
-	*desip = sourceip + 1;
+	string str = sourceip;
+	int pos = str.find("=", 0);
+	desip = sourceip + pos +1;
 	return true;
 }
 
 
-bool MyArr::GetTypeTimeCliStr(char **type, char **time, char **clientip)
+bool MyArr::GetTypeTimeCliStr(char *&type, char *&time, char *&clientip)
 {
 
-	if (type == NULL || time == NULL || clientip == NULL )
-	{
-		cout << "GetTypeTimeCliStr error" << endl;
-		return false;
-	}
 	if (strncmp(tmp[2], "type=v2.bufferStart", strlen("type=v2.bufferStart")) == 0)
 	{
-		*type = "t";
+		type = "t";
 	}
 	else
 	{
-		*type = "p";
+		type = "p";
 	}
 	GetTime(tmp[3], time);
 
@@ -149,9 +135,9 @@ bool MyArr::GetTypeTimeCliStr(char **type, char **time, char **clientip)
 }
 
 
-bool MyArr::GetMyString(char *Strline, char **type, char **time, char **clientip)
+bool MyArr::GetMyString(char *Strline, char *&type, char *&time, char *&clientip)
 {
-	if (Strline == NULL || type == NULL || time == NULL || clientip == NULL)
+	if (Strline == NULL)
 	{
 		cout << "GetMyString error" << endl;
 		return false;
@@ -174,72 +160,35 @@ bool MyArr::ClearTmp()
 }
 
 
-bool MyArr::GetPlace(char **p)
-{
-	if (p == NULL)
-	{
-		cout << "GetPlace error" << endl;
-		return false;
-	}
-	*p = (char *)malloc(sizeof(char)*30);
-	if (*p == NULL)
-	{
-		cout << "GetPlace error" << endl;
-		return false;
-	}
-	return true;
-}
-
-
-bool MyArr::FreeMyArr()
-{
-	int i;
-	for (i = 0; i < truesize; i++)
-	{
-		free(arr[i][0]);
-		free(arr[i][1]);
-		free(arr[i][2]);
-	}
-	return true;
-}
-
-
 bool MyArr::GetMyArr()
 {
 	int i = 0;
-	char *path = "./3.txt";
+	char *path = "./momo-20170323.log";
 	FILE *fr;
 	fr = fopen(path, "r");
 	assert(fr != NULL);
 
 	char Strline[MAXLEN] = { 0 };
-
-	char *type = NULL;
-	char *time = NULL;
-	char *clientip = NULL;
+	string Mystring;
+	char *type;
+	char *time;
+	char *clientip;
 
 	while (!feof(fr))
 	{
 		fgets(Strline, MAXLEN, fr);
-		if (*Strline == '\n')
+		if (*Strline == '\n' || *Strline == '\0')
 		{
 			break;
 		}
-		GetMyString(Strline, &type, &time, &clientip);
+		GetMyString(Strline, type, time, clientip);
 
-		GetPlace(&arr[i][0]);
-		GetPlace(&arr[i][1]);
-		GetPlace(&arr[i][2]);
-
-		strcpy(arr[i][0], type);
-		strcpy(arr[i][1], time);
-		strcpy(arr[i][2], clientip);
+		arr[i][0] = type;
+		arr[i][1] = time;
+		arr[i][2] = clientip;
 		i++;
 		truesize++;
-
-		time = NULL;
-		clientip = NULL;
-		type = NULL;
+		cout << "continue..." << truesize << endl;
 		memset(Strline, 0, MAXLEN);
 		ClearTmp();
 	}
@@ -255,24 +204,24 @@ bool MyArr::Merge(int gap)
 	int high1 = low1 + gap - 1;
 	int low2 = high1 + 1;
 	int high2 = low2 + gap - 1 < truesize - 1 ? low2 + gap - 1 : truesize - 1;
-	char *arrtmp[MAXSIZE][3] = { NULL };
+	map<int,map<int,string> >arrtmp;
 	while (low2 < truesize)
 	{
 		while (low1 <= high1 && low2 <= high2)
 		{
-			if (strcmp(arr[low1][2], arr[low2][2]) < 0)
+			if (arr[low1][2] < arr[low2][2])
 			{
-				arrtmp[i][2] = arr[low1][2];
 				arrtmp[i][0] = arr[low1][0];
 				arrtmp[i][1] = arr[low1][1];
+				arrtmp[i][2] = arr[low1][2];			
 				i++;
 				low1++;
 			}
 			else
 			{
-				arrtmp[i][2] = arr[low2][2];
 				arrtmp[i][0] = arr[low2][0];
 				arrtmp[i][1] = arr[low2][1];
+				arrtmp[i][2] = arr[low2][2];
 				i++;
 				low2++;
 
@@ -326,6 +275,7 @@ bool MyArr::MyMergeArrSort()
 	for (i = 1; i < truesize; i *= 2)
 	{
 		Merge(i);
+		cout << i <<endl;
 	}
 	return true;
 }
@@ -337,7 +287,7 @@ int MyArr::GetCountDifIp()
 	int total = 0;
 	for (i = 0; i < truesize - 1;)
 	{
-		if (strcmp(arr[i][2], arr[i + 1][2]) == 0)
+		if (arr[i][2] == arr[i+1][2])
 		{
 			i++;
 		}
@@ -350,7 +300,7 @@ int MyArr::GetCountDifIp()
 	return total;
 }
 
-int MyArr::MyStrSub(char *a, char *b)
+int MyArr::MyStrSub(const char *a,const char *b)
 {
 	if (a == NULL || b == NULL)
 	{
@@ -454,12 +404,6 @@ int MyArr::MyStrSub(char *a, char *b)
 
 bool MyArr::GetMytime() //Get every ip stop of second
 {
-	if (intertimearr == NULL)
-	{
-		cout << "GetMyTime error\n" << endl;
-		return false;
-	}
-
 	int i;
 	int thisinternum = 0;
 	int intertotal = 0;
@@ -467,7 +411,7 @@ bool MyArr::GetMytime() //Get every ip stop of second
 
 	for (i = 0; i < truesize - 1;)
 	{
-		if (strcmp(arr[i][2], arr[i + 1][2]) != 0)
+		if (arr[i][2] != arr[i + 1][2])
 		{
 			if (thisinternum != 0)
 			{
@@ -475,7 +419,8 @@ bool MyArr::GetMytime() //Get every ip stop of second
 				{
 					max = thisinternum;
 				}
-				intertimearr[totalipj++] = (double)intertotal / (thisinternum * 1000); // ++ 优先级高
+				intertimearr.push_back((double)intertotal / (thisinternum * 1000)); // ++ 优先级高
+				totalipj++;
 			}
 
 			intertotal = 0;
@@ -484,13 +429,13 @@ bool MyArr::GetMytime() //Get every ip stop of second
 		}
 		else
 		{
-			if (strcmp(arr[i][0], arr[i][0]) != 0)
+			if (arr[i][0] == arr[i+1][0])
 			{
 				i++;
 			}
 			else
 			{
-				w = MyStrSub(arr[i][1], arr[i + 1][1]);
+				w = MyStrSub(arr[i][1].c_str(), arr[i+1][1].c_str());
 				intertotal += w;
 				i += 2;
 				thisinternum++;
@@ -503,12 +448,6 @@ bool MyArr::GetMytime() //Get every ip stop of second
 
 bool MyArr::GetOneTime()
 {
-	if (oneinter == NULL)
-	{
-		cout << "GetMyTime error" << endl;
-		return false;
-	}
-
 	int i;
 	int thisinternum = 0;
 	int intertotal = 0;
@@ -516,11 +455,12 @@ bool MyArr::GetOneTime()
 
 	for (i = 0; i < truesize - 1;)
 	{
-		if (strcmp(arr[i][2], arr[i + 1][2]) != 0)
+		if (arr[i][2] != arr[i + 1][2])
 		{
 			if (thisinternum == one_to_end)
 			{
-				oneinter[internumz++] = (double)intertotal / (thisinternum * 1000);
+				oneinter.push_back((double)intertotal / (thisinternum * 1000));
+				internumz++;
 			}
 			intertotal = 0;
 			thisinternum = 0;
@@ -528,13 +468,13 @@ bool MyArr::GetOneTime()
 		}
 		else
 		{
-			if (strcmp(arr[i][0], arr[i][0]) != 0)
+			if (arr[i][0] == arr[i+1][0])
 			{
 				i++;
 			}
 			else
 			{
-				w = MyStrSub(arr[i][1], arr[i + 1][1]);
+				w = MyStrSub(arr[i][1].c_str(), arr[i + 1][1].c_str());
 				intertotal += w;
 				i += 2;
 				thisinternum++;
@@ -582,6 +522,5 @@ int main()
 		printf("time>15s %f%\n", (double)total * 100 / timeobject.totalipj);
 		timeobject.internumz = 0;
 	}
-	timeobject.FreeMyArr();
 	return 0;
 }
